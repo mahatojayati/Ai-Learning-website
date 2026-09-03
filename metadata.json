@@ -1,0 +1,10 @@
+{
+  "name": "Kollektiva AI Teacher",
+  "description": "Interactive AI Educator that teaches through video, personalized lessons, visual demonstrations, real-time voice, and adaptive misconception detection.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
