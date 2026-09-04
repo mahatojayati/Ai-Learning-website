@@ -1,138 +1,70 @@
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
-import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
+import crypto from 'crypto';
+import { Queue } from 'bullmq';
+import redis from './src/server/redis.js'; // Ensure correct extension for module resolution
+import './src/server/workers/syllabusWorker.js'; // Initialize worker
+import { getGemini, generateWithModelFallback, generateStreamWithModelFallback, cleanJsonString, generateFallbackCurriculum } from './src/server/ai.js';
+import { generateTTS } from './src/server/services/tts.js';
 
 dotenv.config();
+
+function extractModulesFromIncompleteJSON(text: string) {
+  const modules: any[] = [];
+  const startIdx = text.indexOf('"curriculumModules"');
+  if (startIdx === -1) return modules;
+  
+  let arrayStart = text.indexOf('[', startIdx);
+  if (arrayStart === -1) return modules;
+  
+  let depth = 0;
+  let objStart = -1;
+  let inString = false;
+  let escape = false;
+
+  for (let i = arrayStart + 1; i < text.length; i++) {
+    const char = text[i];
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (char === '\\') {
+      escape = true;
+      continue;
+    }
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (!inString) {
+      if (char === '{') {
+        if (depth === 0) objStart = i;
+        depth++;
+      } else if (char === '}') {
+        depth--;
+        if (depth === 0 && objStart !== -1) {
+          const objStr = text.substring(objStart, i + 1);
+          try {
+            modules.push(JSON.parse(objStr));
+          } catch (e) {}
+          objStart = -1;
+        }
+      }
+    }
+  }
+  return modules;
+}
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json({ limit: '15mb' }));
 
-// Lazy initialize Gemini client
-let geminiClient: GoogleGenAI | null = null;
-function getGemini(): GoogleGenAI | null {
-  if (!process.env.GEMINI_API_KEY) {
-    return null;
-  }
-  if (!geminiClient) {
-    geminiClient = new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        },
-      },
-    });
-  }
-  return geminiClient;
-}
+// Initialize BullMQ Queue
+const curriculumQueue = new Queue('curriculum-generation', { connection: redis });
 
-// Candidate models in order of preference for text tasks
-// gemini-3.1-flash-lite provides highest availability and quota throughput
-// gemini-3.8-flash is high fidelity but subject to lower free-tier quotas (20/day)
-// gemini-flash-latest serves as reliable alias cascade
-const CANDIDATE_MODELS = [
-  'gemini-3.1-flash-lite',
-  'gemini-3.8-flash',
-  'gemini-flash-latest',
-];
-
-// In-memory model health & cooldown tracking
-const modelCooldowns: Record<string, number> = {};
-
-function isModelHealthy(model: string): boolean {
-  const cooldownUntil = modelCooldowns[model];
-  if (!cooldownUntil) return true;
-  if (Date.now() > cooldownUntil) {
-    delete modelCooldowns[model];
-    return true;
-  }
-  return false;
-}
-
-function setModelCooldown(model: string, durationMs: number = 180000) {
-  modelCooldowns[model] = Date.now() + durationMs;
-}
-
-// Clean potential markdown wrappers around JSON responses
-function cleanJsonString(str: string): string {
-  let cleaned = str.trim();
-  if (cleaned.startsWith('```json')) {
-    cleaned = cleaned.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-  } else if (cleaned.startsWith('```')) {
-    cleaned = cleaned.replace(/^```\s*/, '').replace(/\s*```$/, '');
-  }
-  return cleaned.trim();
-}
-
-// Robust Gemini invoker with automatic transient retry (503/429), model cooldowns, and model cascade fallback
-async function generateWithModelFallback(
-  ai: GoogleGenAI,
-  params: {
-    contents: any;
-    config?: any;
-  }
-) {
-  let lastError: any = null;
-
-  // Prioritize healthy models first
-  const orderedModels = [
-    ...CANDIDATE_MODELS.filter(isModelHealthy),
-    ...CANDIDATE_MODELS.filter((m) => !isModelHealthy(m)),
-  ];
-
-  for (const model of orderedModels) {
-    // If currently in cooldown, skip unless no other models are available
-    if (!isModelHealthy(model) && orderedModels.some(isModelHealthy)) {
-      continue;
-    }
-
-    try {
-      const response = await ai.models.generateContent({
-        model,
-        contents: params.contents,
-        config: params.config,
-      });
-      return response;
-    } catch (err: any) {
-      lastError = err;
-      const msg = String(err?.message || '');
-
-      const isQuotaExhausted =
-        msg.includes('429') ||
-        msg.includes('RESOURCE_EXHAUSTED') ||
-        msg.includes('quota') ||
-        msg.includes('exceeded your current quota');
-
-      const isHighDemand =
-        msg.includes('503') ||
-        msg.includes('UNAVAILABLE') ||
-        msg.includes('high demand') ||
-        msg.includes('temporarily unavailable');
-
-      if (isQuotaExhausted) {
-        // Model quota reached; mark on cooldown for 3 minutes to prevent delayed retries
-        setModelCooldown(model, 180000);
-        console.info(`[Gemini API] ${model} quota reached. Cascading to next candidate model...`);
-        continue;
-      }
-
-      if (isHighDemand) {
-        // Model high demand; mark on cooldown for 45 seconds and cascade
-        setModelCooldown(model, 45000);
-        console.info(`[Gemini API] ${model} high demand (503). Cascading to next candidate model...`);
-        continue;
-      }
-
-      console.warn(`[Gemini API] ${model} error (${msg.slice(0, 80)}). Cascading...`);
-    }
-  }
-
-  throw lastError;
-}
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -143,8 +75,30 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 1. Generate Structured Lesson Plan with Visual Demonstration specs
+app.get('/api/audio/:hash', async (req, res) => {
+  const { hash } = req.params;
+  try {
+    const base64Audio = await redis.get(`tts:${hash}`);
+    if (!base64Audio) {
+      return res.status(404).send('Audio not found');
+    }
+    const buffer = Buffer.from(base64Audio, 'base64');
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.send(buffer);
+  } catch (err) {
+    res.status(500).send('Error retrieving audio');
+  }
+});
+
+// 1. Generate Structured Lesson Plan with Visual Demonstration specs (SSE)
 app.post('/api/generate-lesson', async (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  
+  // Flush headers so client knows stream started
+  res.flushHeaders?.();
+
   try {
     const {
       topic,
@@ -244,7 +198,7 @@ Generate a fully personalized, pedagogical lesson plan formatted strictly as val
 
 Ensure the lesson follows human-like pedagogy: Understand -> Plan -> Explain -> Demonstrate -> Question -> Evaluate -> Adapt. Return ONLY the JSON.`;
 
-      const response = await generateWithModelFallback(ai, {
+      const stream = await generateStreamWithModelFallback(ai, {
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
@@ -252,26 +206,66 @@ Ensure the lesson follows human-like pedagogy: Understand -> Plan -> Explain -> 
         },
       });
 
-      const text = cleanJsonString(response.text?.trim() || '{}');
-      const parsed = JSON.parse(text);
-      return res.json({ success: true, lesson: parsed });
+      let fullText = '';
+      const processedModuleIds = new Set<string>();
+
+      for await (const chunk of stream) {
+        fullText += chunk.text;
+        
+        // Extract modules found so far
+        const modules = extractModulesFromIncompleteJSON(fullText);
+        for (const mod of modules) {
+          if (!processedModuleIds.has(mod.id)) {
+            processedModuleIds.add(mod.id);
+            
+            // 1. Check if speechScript exists
+            if (mod.speechScript) {
+              const hash = crypto.createHash('sha256').update(mod.speechScript).digest('hex');
+              // 2. Check redis cache
+              const cached = await redis.get(`tts:${hash}`);
+              if (!cached) {
+                // Generate and cache
+                const audioBuffer = await generateTTS(mod.speechScript, language);
+                if (audioBuffer) {
+                  await redis.set(`tts:${hash}`, audioBuffer.toString('base64'));
+                  mod.audioUrl = `/api/audio/${hash}`;
+                }
+              } else {
+                mod.audioUrl = `/api/audio/${hash}`;
+              }
+            }
+
+            // Emit the module
+            res.write(`data: ${JSON.stringify({ type: 'module', data: mod })}\n\n`);
+          }
+        }
+      }
+
+      // At the end, try parsing the full text to emit the final metadata (title, summary, etc.)
+      try {
+        const parsed = JSON.parse(cleanJsonString(fullText));
+        const metadata = { ...parsed };
+        delete metadata.curriculumModules; // Already sent modules
+        res.write(`data: ${JSON.stringify({ type: 'metadata', data: metadata })}\n\n`);
+      } catch(e) {}
+
+      res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+      return res.end();
     }
 
     // High quality pedagogical fallback if Gemini API is not yet configured
-    return res.json({
-      success: true,
-      fallback: true,
-      lesson: generateFallbackLesson(topic, level, durationMinutes, language, teacherName),
-    });
+    const fallback = generateFallbackLesson(topic, level, durationMinutes, language, teacherName);
+    res.write(`data: ${JSON.stringify({ type: 'fallback', data: fallback })}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+    return res.end();
   } catch (error: any) {
     console.warn('Gemini lesson generation fallback triggered:', error?.message);
     const { topic, level, durationMinutes, language, teacherName } = req.body;
-    return res.json({
-      success: true,
-      fallback: true,
-      error: error?.message,
-      lesson: generateFallbackLesson(topic, level, durationMinutes, language, teacherName),
-    });
+    const fallback = generateFallbackLesson(topic, level, durationMinutes, language, teacherName);
+    res.write(`data: ${JSON.stringify({ type: 'fallback', data: fallback })}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: 'error', message: error?.message })}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+    return res.end();
   }
 });
 
@@ -413,81 +407,59 @@ CRITICAL: Respond in ${language} with teacherly clarity, precision, and warmth (
 // 4. Personalized AI Curriculum Generation Endpoint (No hardcoded paths)
 app.post('/api/generate-curriculum', async (req, res) => {
   try {
-    const {
-      subjectGoal,
-      level = 'intermediate',
-      language = 'English',
-      weeklyHours = 5,
-      teacherName = 'Elena Baranova',
-      priorKnowledge = '',
-    } = req.body;
+    const payload = req.body;
+    
+    // Generate a deterministic hash for cache/job ID
+    const hash = crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+    const cacheKey = `curriculum:${hash}`;
 
-    const ai = getGemini();
-
-    if (ai) {
-      const prompt = `You are ${teacherName}, an elite AI academic dean at Kollektiva.
-Generate a completely personalized, structured learning curriculum tailored for:
-- Learning Goal/Topic: "${subjectGoal}"
-- Learner Level: "${level}"
-- Weekly Time Commitment: ${weeklyHours} hours
-- Language: "${language}"
-- Prior Knowledge: "${priorKnowledge || 'None provided; start from appropriate entry point'}"
-
-CRITICAL LANGUAGE MANDATE:
-All titles, module descriptions, milestones, outcomes, and prerequisites MUST be written fluently in ${language}.
-
-Format strictly as JSON:
-{
-  "curriculumTitle": string,
-  "overview": string,
-  "estimatedWeeks": number,
-  "prerequisites": string[],
-  "chapters": [
-    {
-      "chapterNumber": number,
-      "title": string,
-      "description": string,
-      "keyConcepts": string[],
-      "estimatedHours": number,
-      "difficulty": "beginner" | "intermediate" | "advanced",
-      "practicalProject": string
-    }
-  ],
-  "capstoneProject": {
-    "title": string,
-    "description": string,
-    "deliverables": string[]
-  }
-}
-Return ONLY valid JSON.`;
-
-      const response = await generateWithModelFallback(ai, {
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-          temperature: 0.7,
-        },
-      });
-
-      const text = cleanJsonString(response.text?.trim() || '{}');
-      const parsed = JSON.parse(text);
-      return res.json({ success: true, curriculum: parsed });
+    // Check Redis for cached result
+    const cachedResult = await redis.get(cacheKey);
+    if (cachedResult) {
+      return res.json({ success: true, curriculum: JSON.parse(cachedResult), cached: true });
     }
 
-    // Dynamic fallback
-    return res.json({
-      success: true,
-      fallback: true,
-      curriculum: generateFallbackCurriculum(subjectGoal, level, language, weeklyHours),
-    });
+    // Add job to BullMQ
+    const job = await curriculumQueue.add('generate', payload, { jobId: hash });
+
+    return res.json({ success: true, jobId: job.id });
   } catch (err: any) {
-    console.warn('Curriculum generation fallback triggered:', err?.message);
+    console.warn('Curriculum job enqueue failed:', err?.message);
     const { subjectGoal, level, language, weeklyHours } = req.body;
     return res.json({
       success: true,
       fallback: true,
       curriculum: generateFallbackCurriculum(subjectGoal, level, language, weeklyHours),
     });
+  }
+});
+
+app.get('/api/curriculum-job/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const job = await curriculumQueue.getJob(id);
+
+    if (!job) {
+      return res.status(404).json({ success: false, message: 'Job not found' });
+    }
+
+    const state = await job.getState();
+
+    if (state === 'completed') {
+      const curriculum = job.returnvalue;
+      // Cache the result in Redis for 24 hours
+      await redis.set(`curriculum:${id}`, JSON.stringify(curriculum), 'EX', 86400);
+      return res.json({ success: true, status: state, curriculum });
+    }
+
+    if (state === 'failed') {
+      return res.json({ success: false, status: state, error: job.failedReason });
+    }
+
+    return res.json({ success: true, status: state });
+  } catch (err: any) {
+    console.error('Error fetching job status:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
@@ -558,99 +530,7 @@ Return ONLY valid JSON.`;
 });
 
 // Dynamic curriculum fallback generator supporting multilingual requests
-function generateFallbackCurriculum(
-  subjectGoal: string = 'Mastery Path',
-  level: string = 'intermediate',
-  language: string = 'English',
-  weeklyHours: number = 5
-) {
-  const isHindi = language.toLowerCase().includes('hindi') || language.toLowerCase().includes('hinglish');
-  const cleanGoal = subjectGoal || 'Core Conceptual Mastery';
-
-  if (isHindi) {
-    return {
-      curriculumTitle: `${cleanGoal}: Sampoorna Margdarshak Path`,
-      overview: `${cleanGoal} ke liye ek vyaktigat pathyakram, jisme ${level} level ke dhyan me rakhkar prati saptah ${weeklyHours} ghante padhai ka dhyan rakha gaya hai.`,
-      estimatedWeeks: 4,
-      prerequisites: [`Moolbhoot tarka shakti`, `Vishay me ruchi aur niyamit abhyas`],
-      chapters: [
-        {
-          chapterNumber: 1,
-          title: `${cleanGoal} ki Buniyad aur Mool Siddhant`,
-          description: `Mukhya paribhashayein, siddhant aur buniyadi dharano ka gahraai se vishleshan.`,
-          keyConcepts: ['First-principles vishleshan', 'Mukhya char aur paribhashayein', 'Buniyadi niyam'],
-          estimatedHours: weeklyHours,
-          difficulty: 'beginner',
-          practicalProject: `Buniyadi sankalpa map aur aatm-mulyankan exercise.`
-        },
-        {
-          chapterNumber: 2,
-          title: `Gatisheel Pranali aur Samasya Nivaran`,
-          description: `Karan aur prabhav ke sambandh, intermediate sthitiyan aur practical prayog.`,
-          keyConcepts: ['Cause & effect correlation', 'System dynamics', 'Practical problem solving'],
-          estimatedHours: weeklyHours,
-          difficulty: 'intermediate',
-          practicalProject: `Hands-on simulation aur model creation.`
-        },
-        {
-          chapterNumber: 3,
-          title: `Uchchatam Prayog aur Edge Cases`,
-          description: `Gahan samasya nivaran, trutiyon ka pata lagana aur anukoolan.`,
-          keyConcepts: ['Error diagnosis', 'Optimization', 'Real-world deployment'],
-          estimatedHours: weeklyHours,
-          difficulty: 'advanced',
-          practicalProject: `Purna project ka nirman aur prastuti.`
-        }
-      ],
-      capstoneProject: {
-        title: `${cleanGoal} par Samagra Capstone Pariyojana`,
-        description: `Sikhi gayi sabhi dharano ko jodkar ek vastavik samasya ka samadhan prastut karein.`,
-        deliverables: ['Purna karyashil model', 'Vivaran dastavej', 'Mukhik prastutikaran']
-      }
-    };
-  }
-
-  return {
-    curriculumTitle: `Personalized Trajectory: ${cleanGoal}`,
-    overview: `A bespoke learning trajectory designed for ${level} level learners, paced at ${weeklyHours} hours per week with adaptive milestones.`,
-    estimatedWeeks: 4,
-    prerequisites: ['Foundational logical reasoning', 'Curiosity and regular study commitment'],
-    chapters: [
-      {
-        chapterNumber: 1,
-        title: `Foundations of ${cleanGoal}`,
-        description: `Deconstruct fundamental definitions and establish core mental models from first principles.`,
-        keyConcepts: ['First-principles decomposition', 'Core mechanics', 'Key governing variables'],
-        estimatedHours: weeklyHours,
-        difficulty: 'beginner',
-        practicalProject: `Interactive conceptual map and baseline diagnostic challenge.`
-      },
-      {
-        chapterNumber: 2,
-        title: `System Dynamics & Problem Solving in ${cleanGoal}`,
-        description: `Analyze intermediate relationships, transfer functions, and dynamic interactions.`,
-        keyConcepts: ['Cause and effect mechanisms', 'System equilibrium', 'Troubleshooting bottlenecks'],
-        estimatedHours: weeklyHours,
-        difficulty: 'intermediate',
-        practicalProject: `Hands-on analytical simulation challenge.`
-      },
-      {
-        chapterNumber: 3,
-        title: `Advanced Synthesis & Edge Cases in ${cleanGoal}`,
-        description: `Tackle complex non-linear scenarios, boundary constraint validation, and optimizations.`,
-        keyConcepts: ['Boundary testing', 'Performance tuning', 'Cross-domain integration'],
-        estimatedHours: weeklyHours,
-        difficulty: 'advanced',
-        practicalProject: `Comprehensive case-study derivation and code/model artifact.`
-      }
-    ],
-    capstoneProject: {
-      title: `Comprehensive ${cleanGoal} Synthesis`,
-      description: `Synthesize all theoretical foundations into a defensible real-world capstone solution.`,
-      deliverables: ['Working prototype/model', 'Documented derivation', 'Oral walkthrough']
-    }
-  };
-}
+// Fallback curriculum logic moved to ai.ts
 
 // Dynamic practice question fallback generator
 function generateFallbackPractice(
