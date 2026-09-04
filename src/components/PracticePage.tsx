@@ -4,6 +4,7 @@ import { TEACHERS } from '../data/teachers';
 import { BrainCircuit, Sparkles, HelpCircle, CheckCircle, AlertTriangle, ArrowRight, RotateCcw, Volume2, Loader2, ArrowLeft } from 'lucide-react';
 import { LearnerLevel, TeacherAvatar } from '../types';
 import { selectVoiceForTeacher, testSpeakVoice } from '../utils/speechVoiceHelper';
+import { LiquidGlassButton } from './LiquidGlassButton';
 
 interface PracticeQuestion {
   id: string;
@@ -83,48 +84,50 @@ export const PracticePage: React.FC<PracticePageProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="min-h-screen kollektiva-page-bg text-white font-geist pt-24 pb-32 px-4 sm:px-6 lg:px-8 overflow-y-auto">
+    <div className="min-h-screen kollektiva-page-bg text-white font-geist pt-24 pb-32 px-4 sm:px-6 lg:px-8 overflow-y-auto selection:bg-emerald-500 selection:text-black">
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Back Navigation Action */}
         {onBack && (
           <div>
-            <button
-              type="button"
+            <LiquidGlassButton
+              variant="subtle"
+              size="sm"
               onClick={onBack}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-xs font-semibold text-emerald-300 transition-all shadow-sm hover:scale-[1.02]"
+              icon={<ArrowLeft className="w-3.5 h-3.5 text-emerald-400" />}
             >
-              <ArrowLeft className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Back to Home</span>
-            </button>
+              Back to Home
+            </LiquidGlassButton>
           </div>
         )}
 
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-white/10">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-white/15">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-xs text-sky-400 font-mono uppercase mb-3">
-              <BrainCircuit className="w-3.5 h-3.5 text-sky-300" />
-              <span>AI Cognitive Misconception Arena</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full liquid-glass-pill text-xs text-white/90 border border-white/20 mb-3 shadow-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="font-mono uppercase tracking-wider text-[11px] text-emerald-300">
+                AI Cognitive Misconception Arena
+              </span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-normal tracking-tight text-white">
+            <h1 className="text-3xl sm:text-5xl font-normal tracking-tight text-white leading-tight">
               Adaptive Practice & Diagnostics
             </h1>
-            <p className="mt-2 text-sm text-white/60 max-w-xl">
+            <p className="mt-2 text-sm text-white/70 max-w-xl leading-relaxed">
               Zero static question banks. Every challenge is synthesized in real-time by AI to test deep conceptual understanding and pinpoint exact mental models.
             </p>
           </div>
 
           {/* Instructor indicator */}
-          <div className="flex items-center gap-3 bg-white/5 border border-white/10 p-3 rounded-2xl">
+          <div className="flex items-center gap-3.5 liquid-glass-card border border-white/18 p-3.5 rounded-2xl shadow-xl">
             <img
               src={selectedTeacher.imageUrl}
               alt={selectedTeacher.name}
-              className="w-12 h-12 rounded-xl object-cover border border-white/20"
+              className="w-12 h-12 rounded-xl object-cover ring-1 ring-white/25"
             />
             <div>
-              <span className="text-xs text-white/60 block">Diagnostic Examiner</span>
-              <span className="text-sm font-medium text-white">{selectedTeacher.name}</span>
-              <span className="text-[11px] text-sky-400 block">
+              <span className="text-[11px] text-white/50 block font-mono">Diagnostic Examiner</span>
+              <span className="text-sm font-semibold text-white">{selectedTeacher.name}</span>
+              <span className="text-xs text-emerald-400 block font-mono">
                 {selectedTeacher.voiceGender === 'female' ? '♀ Female Voice' : '♂ Male Voice'}
               </span>
             </div>
@@ -132,8 +135,8 @@ export const PracticePage: React.FC<PracticePageProps> = ({ onBack }) => {
         </div>
 
         {/* Generator Controls */}
-        <div className="bg-zinc-900/60 border border-white/10 rounded-3xl p-6 backdrop-blur-xl">
-          <form onSubmit={handleGenerateQuestion} className="space-y-4">
+        <div className="liquid-glass-card border border-white/18 rounded-3xl p-6 sm:p-8 backdrop-blur-2xl shadow-2xl">
+          <form onSubmit={handleGenerateQuestion} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="sm:col-span-2 space-y-1.5">
                 <label className="block text-xs font-mono uppercase text-white/70 tracking-wider">
@@ -144,7 +147,7 @@ export const PracticePage: React.FC<PracticePageProps> = ({ onBack }) => {
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                   placeholder="e.g. Electromagnetic Induction, Dynamic Programming, Photosynthesis..."
-                  className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white text-sm focus:outline-none focus:border-sky-400"
+                  className="w-full px-4 py-3 rounded-2xl bg-black/40 border border-white/18 text-white text-sm placeholder-white/30 focus:outline-none focus:border-white/50 focus:ring-1 focus:ring-white/30 transition-all shadow-inner"
                   required
                 />
               </div>
@@ -156,7 +159,7 @@ export const PracticePage: React.FC<PracticePageProps> = ({ onBack }) => {
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl bg-black/40 border border-white/15 text-xs text-white focus:outline-none focus:border-sky-400"
+                  className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/18 text-xs text-white focus:outline-none focus:border-white/50 focus:ring-1 focus:ring-white/30"
                 >
                   <option value="English" className="bg-zinc-900">English</option>
                   <option value="Hindi" className="bg-zinc-900">Hindi (हिंदी)</option>
@@ -171,16 +174,16 @@ export const PracticePage: React.FC<PracticePageProps> = ({ onBack }) => {
 
             <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-white/60">Difficulty:</span>
+                <span className="text-xs text-white/60 font-mono">Difficulty:</span>
                 {(['beginner', 'intermediate', 'advanced'] as LearnerLevel[]).map((lvl) => (
                   <button
                     key={lvl}
                     type="button"
                     onClick={() => setLevel(lvl)}
-                    className={`px-3 py-1 rounded-lg text-xs font-medium capitalize border transition-all ${
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-medium capitalize border transition-all ${
                       level === lvl
-                        ? 'bg-white text-zinc-950 border-white'
-                        : 'bg-white/5 border-white/10 text-white/70 hover:text-white'
+                        ? 'bg-white text-zinc-950 border-white shadow-[0_2px_10px_rgba(255,255,255,0.2)] font-semibold scale-[1.02]'
+                        : 'bg-white/[0.06] hover:bg-white/[0.12] border-white/15 text-white/75 hover:text-white'
                     }`}
                   >
                     {lvl}
@@ -188,58 +191,50 @@ export const PracticePage: React.FC<PracticePageProps> = ({ onBack }) => {
                 ))}
               </div>
 
-              <button
-                type="submit"
+              <LiquidGlassButton
+                variant="primary"
+                size="md"
+                onClick={(e: any) => handleGenerateQuestion(e)}
                 disabled={isLoading}
-                className="px-5 py-2.5 rounded-xl bg-white text-zinc-950 hover:bg-white/90 font-medium text-xs transition-all flex items-center gap-2 shadow"
+                icon={isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-amber-300" />}
               >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Synthesizing Question...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-3.5 h-3.5 text-sky-500 fill-sky-500" />
-                    <span>Generate AI Question in {language}</span>
-                  </>
-                )}
-              </button>
+                {isLoading ? 'Synthesizing Question...' : `Generate AI Question in ${language}`}
+              </LiquidGlassButton>
             </div>
           </form>
         </div>
 
         {/* Question Area */}
         {question && (
-          <div className="bg-zinc-900/80 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6 animate-[fadeIn_0.3s_ease-out]">
+          <div className="liquid-glass-card border border-white/18 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl backdrop-blur-2xl animate-[fadeIn_0.3s_ease-out]">
             {/* Question Scenario */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono uppercase text-sky-400">
+                <span className="text-xs font-mono uppercase tracking-wider text-emerald-300 bg-white/5 border border-white/15 px-3 py-1 rounded-full">
                   Concept: {question.relatedConcept}
                 </span>
                 <button
                   onClick={() => setShowHint(!showHint)}
-                  className="text-xs text-amber-300/90 hover:text-amber-300 flex items-center gap-1 transition-colors"
+                  className="text-xs text-amber-300/90 hover:text-amber-300 flex items-center gap-1.5 transition-colors font-medium"
                 >
-                  <HelpCircle className="w-3.5 h-3.5" />
+                  <HelpCircle className="w-3.5 h-3.5 text-amber-300" />
                   <span>{showHint ? 'Hide Hint' : 'Need a Hint?'}</span>
                 </button>
               </div>
 
               {showHint && (
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200 leading-relaxed">
+                <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-xs text-amber-200 leading-relaxed font-mono">
                   💡 <strong>Hint:</strong> {question.hint}
                 </div>
               )}
 
               {question.scenario && (
-                <div className="p-4 rounded-2xl bg-black/40 border border-white/10 text-xs sm:text-sm text-white/80 leading-relaxed font-serif italic">
+                <div className="p-4 rounded-2xl bg-black/40 border border-white/15 text-xs sm:text-sm text-white/85 leading-relaxed font-serif italic shadow-inner">
                   "{question.scenario}"
                 </div>
               )}
 
-              <h3 className="text-lg sm:text-xl font-normal text-white leading-snug">
+              <h3 className="text-lg sm:text-xl font-medium text-white leading-snug">
                 {question.question}
               </h3>
             </div>
@@ -250,17 +245,17 @@ export const PracticePage: React.FC<PracticePageProps> = ({ onBack }) => {
                 const isSelected = selectedIndex === idx;
                 const isCorrect = idx === question.correctIndex;
 
-                let borderClass = 'border-white/10 hover:border-white/20 bg-white/5';
+                let optionClass = 'border-white/15 hover:border-white/30 bg-white/[0.04] hover:bg-white/[0.09] text-white/90';
                 if (hasSubmitted) {
                   if (isCorrect) {
-                    borderClass = 'border-emerald-500 bg-emerald-500/20 text-emerald-200';
+                    optionClass = 'border-emerald-400 bg-emerald-500/20 text-emerald-100 ring-1 ring-emerald-400';
                   } else if (isSelected && !isCorrect) {
-                    borderClass = 'border-rose-500 bg-rose-500/20 text-rose-200';
+                    optionClass = 'border-rose-400 bg-rose-500/20 text-rose-100 ring-1 ring-rose-400';
                   } else {
-                    borderClass = 'opacity-40 border-white/5 bg-transparent';
+                    optionClass = 'opacity-40 border-white/10 bg-transparent';
                   }
                 } else if (isSelected) {
-                  borderClass = 'border-sky-400 bg-sky-500/20 text-white';
+                  optionClass = 'border-white/50 bg-white/20 text-white ring-1 ring-white shadow-lg';
                 }
 
                 return (
@@ -269,9 +264,9 @@ export const PracticePage: React.FC<PracticePageProps> = ({ onBack }) => {
                     type="button"
                     disabled={hasSubmitted}
                     onClick={() => setSelectedIndex(idx)}
-                    className={`w-full text-left p-4 rounded-2xl border transition-all text-xs sm:text-sm flex items-start gap-3.5 ${borderClass}`}
+                    className={`w-full text-left p-4 rounded-2xl border transition-all text-xs sm:text-sm flex items-start gap-3.5 ${optionClass}`}
                   >
-                    <span className="w-6 h-6 rounded-lg bg-black/40 border border-white/15 flex items-center justify-center font-mono text-xs shrink-0 mt-0.5">
+                    <span className="w-6 h-6 rounded-lg bg-black/50 border border-white/20 flex items-center justify-center font-mono text-xs shrink-0 mt-0.5 font-bold">
                       {String.fromCharCode(65 + idx)}
                     </span>
                     <span className="flex-1 leading-relaxed">{opt}</span>
@@ -289,24 +284,25 @@ export const PracticePage: React.FC<PracticePageProps> = ({ onBack }) => {
             {/* Submit Action */}
             {!hasSubmitted ? (
               <div className="pt-2">
-                <button
-                  type="button"
+                <LiquidGlassButton
+                  variant="primary"
+                  size="lg"
                   disabled={selectedIndex === null}
                   onClick={() => setHasSubmitted(true)}
-                  className="w-full py-3 rounded-2xl bg-white text-zinc-950 hover:bg-white/90 font-medium text-sm transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-40"
+                  icon={<ArrowRight className="w-4 h-4" />}
+                  className="w-full shadow-xl"
                 >
-                  <span>Submit Diagnostic Answer</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                  Submit Diagnostic Answer
+                </LiquidGlassButton>
               </div>
             ) : (
-              <div className="pt-4 border-t border-white/10 space-y-4 animate-[fadeIn_0.3s_ease-out]">
+              <div className="pt-4 border-t border-white/15 space-y-4 animate-[fadeIn_0.3s_ease-out]">
                 {/* Result Feedback Banner */}
                 <div
                   className={`p-5 rounded-2xl border ${
                     selectedIndex === question.correctIndex
-                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
-                      : 'bg-rose-500/10 border-rose-500/30 text-rose-200'
+                      ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-100 shadow-lg'
+                      : 'bg-amber-500/15 border-amber-400/40 text-amber-100 shadow-lg'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
@@ -324,14 +320,14 @@ export const PracticePage: React.FC<PracticePageProps> = ({ onBack }) => {
                               question.misconceptionAnalysis.correctReason
                         )
                       }
-                      className="text-xs flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+                      className="text-xs flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/15"
                     >
-                      <Volume2 className="w-3.5 h-3.5" />
+                      <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
                       <span>Hear Instructor</span>
                     </button>
                   </div>
 
-                  <p className="text-xs sm:text-sm leading-relaxed text-white/90">
+                  <p className="text-xs sm:text-sm leading-relaxed text-white/95">
                     {selectedIndex === question.correctIndex
                       ? question.misconceptionAnalysis.correctReason
                       : question.misconceptionAnalysis.distractorExplanations[selectedIndex!] ||
@@ -340,13 +336,14 @@ export const PracticePage: React.FC<PracticePageProps> = ({ onBack }) => {
                 </div>
 
                 <div className="flex items-center justify-end gap-3 pt-2">
-                  <button
+                  <LiquidGlassButton
+                    variant="primary"
+                    size="md"
                     onClick={handleGenerateQuestion}
-                    className="px-5 py-2.5 rounded-xl bg-white text-zinc-950 hover:bg-white/90 text-xs font-semibold transition-all flex items-center gap-2 shadow"
+                    icon={<RotateCcw className="w-3.5 h-3.5" />}
                   >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Next Adaptive Challenge</span>
-                  </button>
+                    Next Adaptive Challenge
+                  </LiquidGlassButton>
                 </div>
               </div>
             )}

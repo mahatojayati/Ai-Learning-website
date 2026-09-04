@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { TEACHERS } from '../data/teachers';
 import { Sparkles, BookOpen, Clock, Layers, ArrowRight, CheckCircle2, Loader2, Play, ArrowLeft } from 'lucide-react';
 import { LearnerLevel, TeacherAvatar } from '../types';
+import { LiquidGlassButton } from './LiquidGlassButton';
 
 interface CurriculumChapter {
   chapterNumber: number;
@@ -76,53 +77,55 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onStartLessonOnT
   };
 
   return (
-    <div className="min-h-screen kollektiva-page-bg text-white font-geist pt-24 pb-32 px-4 sm:px-6 lg:px-8 overflow-y-auto">
+    <div className="min-h-screen kollektiva-page-bg text-white font-geist pt-24 pb-32 px-4 sm:px-6 lg:px-8 overflow-y-auto selection:bg-emerald-500 selection:text-black">
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Back Navigation Action */}
         {onBack && (
           <div>
-            <button
-              type="button"
+            <LiquidGlassButton
+              variant="subtle"
+              size="sm"
               onClick={onBack}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-xs font-semibold text-emerald-300 transition-all shadow-sm hover:scale-[1.02]"
+              icon={<ArrowLeft className="w-3.5 h-3.5 text-emerald-400" />}
             >
-              <ArrowLeft className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Back to Home</span>
-            </button>
+              Back to Home
+            </LiquidGlassButton>
           </div>
         )}
 
         {/* Page Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-white/10">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-white/15">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-400 font-mono uppercase mb-3">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
-              <span>AI-Driven Dynamic Curriculum Studio</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full liquid-glass-pill text-xs text-white/90 border border-white/20 mb-3 shadow-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="font-mono uppercase tracking-wider text-[11px] text-emerald-300">
+                AI Dynamic Curriculum Studio
+              </span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-normal tracking-tight text-white">
+            <h1 className="text-3xl sm:text-5xl font-normal tracking-tight text-white leading-tight">
               Personalized Syllabus Generator
             </h1>
-            <p className="mt-2 text-sm text-white/60 max-w-2xl">
+            <p className="mt-2 text-sm text-white/70 max-w-2xl leading-relaxed">
               Zero static presets. Kollektiva uses generative pedagogy to design an adaptive, multi-week learning plan calibrated to your specific objectives and language.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 bg-white/5 border border-white/10 p-3 rounded-2xl">
+          <div className="flex items-center gap-3.5 liquid-glass-card border border-white/18 p-3.5 rounded-2xl shadow-xl">
             <img
               src={selectedTeacher.imageUrl}
               alt={selectedTeacher.name}
-              className="w-12 h-12 rounded-xl object-cover border border-white/20"
+              className="w-12 h-12 rounded-xl object-cover ring-1 ring-white/25"
             />
             <div>
-              <span className="text-xs text-white/60 block">Academic Mentor</span>
-              <span className="text-sm font-medium text-white">{selectedTeacher.name}</span>
-              <span className="text-[11px] text-emerald-400 block">{selectedTeacher.specialty}</span>
+              <span className="text-[11px] text-white/50 block font-mono">Academic Mentor</span>
+              <span className="text-sm font-semibold text-white">{selectedTeacher.name}</span>
+              <span className="text-xs text-emerald-400 block">{selectedTeacher.specialty}</span>
             </div>
           </div>
         </div>
 
         {/* Input Generator Card */}
-        <div className="liquid-glass-card border border-white/15 rounded-3xl p-6 sm:p-8 backdrop-blur-xl">
+        <div className="liquid-glass-card border border-white/18 rounded-3xl p-6 sm:p-8 backdrop-blur-2xl shadow-2xl">
           <form onSubmit={handleGenerateCurriculum} className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Target Subject / Goal */}
@@ -135,7 +138,7 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onStartLessonOnT
                   value={subjectGoal}
                   onChange={(e) => setSubjectGoal(e.target.value)}
                   placeholder="e.g. Statistical Mechanics, Neural Attention Mechanisms, Multivariable Calculus..."
-                  className="w-full px-4 py-3.5 rounded-2xl bg-black/40 border border-white/15 text-white placeholder-white/30 text-sm focus:outline-none focus:border-emerald-400 transition-colors"
+                  className="w-full px-4 py-3.5 rounded-2xl bg-black/40 border border-white/18 text-white placeholder-white/30 text-sm focus:outline-none focus:border-white/50 focus:ring-1 focus:ring-white/30 transition-all shadow-inner"
                   required
                 />
               </div>
@@ -153,8 +156,8 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onStartLessonOnT
                       onClick={() => setWeeklyHours(hrs)}
                       className={`flex-1 py-3 rounded-xl text-xs font-medium border transition-all ${
                         weeklyHours === hrs
-                          ? 'bg-white text-zinc-950 border-white shadow'
-                          : 'bg-white/5 border-white/10 text-white/70 hover:text-white'
+                          ? 'bg-white text-zinc-950 border-white shadow-[0_2px_10px_rgba(255,255,255,0.2)] font-semibold scale-[1.02]'
+                          : 'bg-white/[0.06] hover:bg-white/[0.12] border-white/15 text-white/75 hover:text-white'
                       }`}
                     >
                       {hrs} hrs
@@ -173,7 +176,7 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onStartLessonOnT
                 <select
                   value={level}
                   onChange={(e) => setLevel(e.target.value as LearnerLevel)}
-                  className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/15 text-xs text-white focus:outline-none focus:border-emerald-400"
+                  className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/18 text-xs text-white focus:outline-none focus:border-white/50 focus:ring-1 focus:ring-white/30"
                 >
                   <option value="beginner" className="bg-zinc-900">Beginner (First Principles & Intuition)</option>
                   <option value="intermediate" className="bg-zinc-900">Intermediate (Theory + Application)</option>
@@ -189,7 +192,7 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onStartLessonOnT
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/15 text-xs text-white focus:outline-none focus:border-emerald-400"
+                  className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/18 text-xs text-white focus:outline-none focus:border-white/50 focus:ring-1 focus:ring-white/30"
                 >
                   <option value="English" className="bg-zinc-900">English</option>
                   <option value="Hindi" className="bg-zinc-900">Hindi (हिंदी)</option>
@@ -212,7 +215,7 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onStartLessonOnT
                     const found = TEACHERS.find((t) => t.id === e.target.value);
                     if (found) setSelectedTeacher(found);
                   }}
-                  className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/15 text-xs text-white focus:outline-none focus:border-emerald-400"
+                  className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/18 text-xs text-white focus:outline-none focus:border-white/50 focus:ring-1 focus:ring-white/30"
                 >
                   {TEACHERS.map((t, idx) => (
                     <option key={t.id} value={t.id} className="bg-zinc-900">
@@ -233,28 +236,22 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onStartLessonOnT
                 value={priorKnowledge}
                 onChange={(e) => setPriorKnowledge(e.target.value)}
                 placeholder="What have you already studied? e.g. College algebra, high school physics..."
-                className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/15 text-white placeholder-white/30 text-xs focus:outline-none focus:border-emerald-400"
+                className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/18 text-white placeholder-white/30 text-xs focus:outline-none focus:border-white/50 focus:ring-1 focus:ring-white/30"
               />
             </div>
 
-            <button
-              type="submit"
+            <LiquidGlassButton
+              variant="primary"
+              size="lg"
+              onClick={(e: any) => handleGenerateCurriculum(e)}
               disabled={isGenerating}
-              className="w-full py-3.5 px-6 rounded-2xl bg-white text-zinc-950 hover:bg-white/90 font-semibold text-sm transition-all shadow-xl flex items-center justify-center gap-2 disabled:opacity-60"
+              icon={isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-amber-300" />}
+              className="w-full shadow-2xl"
             >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin text-zinc-950" />
-                  <span>Synthesizing Tailored Curriculum with Gemini AI...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 text-amber-500 fill-amber-500" />
-                  <span>Generate Personalized Curriculum in {language}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
+              {isGenerating
+                ? 'Synthesizing Tailored Curriculum with Gemini AI...'
+                : `Generate Personalized Curriculum in ${language}`}
+            </LiquidGlassButton>
           </form>
         </div>
 
@@ -262,16 +259,16 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onStartLessonOnT
         {curriculum && (
           <div className="space-y-8 animate-[fadeIn_0.4s_ease-out]">
             {/* Overview Box */}
-            <div className="p-6 sm:p-8 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-md">
+            <div className="p-6 sm:p-8 rounded-3xl liquid-glass-card border border-white/18 shadow-2xl backdrop-blur-2xl">
               <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                 <h2 className="text-2xl sm:text-3xl font-normal text-white">
                   {curriculum.curriculumTitle}
                 </h2>
                 <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 rounded-full bg-white/10 text-xs font-mono text-emerald-300">
+                  <span className="px-3 py-1 rounded-full liquid-glass-pill text-xs font-mono text-emerald-300 border border-white/18">
                     Duration: ~{curriculum.estimatedWeeks} Weeks
                   </span>
-                  <span className="px-3 py-1 rounded-full bg-white/10 text-xs font-mono text-sky-300">
+                  <span className="px-3 py-1 rounded-full liquid-glass-pill text-xs font-mono text-white/90 border border-white/18">
                     Lang: {language}
                   </span>
                 </div>
@@ -281,10 +278,10 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onStartLessonOnT
               </p>
 
               {curriculum.prerequisites?.length > 0 && (
-                <div className="pt-4 border-t border-white/10 flex flex-wrap items-center gap-2">
+                <div className="pt-4 border-t border-white/15 flex flex-wrap items-center gap-2">
                   <span className="text-xs font-mono text-white/60">Prerequisites:</span>
                   {curriculum.prerequisites.map((p, i) => (
-                    <span key={i} className="text-xs px-2.5 py-1 rounded-lg bg-black/40 border border-white/10 text-white/90">
+                    <span key={i} className="text-xs px-2.5 py-1 rounded-lg bg-black/40 border border-white/15 text-white/90 font-mono">
                       {p}
                     </span>
                   ))}
@@ -303,15 +300,15 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onStartLessonOnT
                 {curriculum.chapters.map((ch) => (
                   <div
                     key={ch.chapterNumber}
-                    className="p-6 rounded-2xl bg-zinc-900/80 border border-white/10 hover:border-white/20 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6"
+                    className="p-6 rounded-3xl liquid-glass-card border border-white/15 hover:border-white/30 transition-all shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6"
                   >
                     <div className="space-y-2 max-w-2xl">
                       <div className="flex items-center gap-3">
-                        <span className="w-7 h-7 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center font-mono text-xs text-amber-300 font-bold">
+                        <span className="w-8 h-8 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center font-mono text-xs text-amber-300 font-bold shadow-inner">
                           {ch.chapterNumber}
                         </span>
-                        <h4 className="text-base font-medium text-white">{ch.title}</h4>
-                        <span className="text-[11px] px-2 py-0.5 rounded bg-white/5 border border-white/10 text-white/60 font-mono capitalize">
+                        <h4 className="text-base font-semibold text-white">{ch.title}</h4>
+                        <span className="text-[11px] px-2.5 py-0.5 rounded-full liquid-glass-pill border border-white/15 text-white/70 font-mono capitalize">
                           {ch.difficulty}
                         </span>
                       </div>
@@ -321,7 +318,7 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onStartLessonOnT
                         {ch.keyConcepts?.map((kc, kidx) => (
                           <span
                             key={kidx}
-                            className="text-[11px] px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-emerald-300"
+                            className="text-[11px] px-2.5 py-0.5 rounded-lg bg-white/[0.06] border border-white/15 text-emerald-300 font-mono"
                           >
                             {kc}
                           </span>
@@ -329,20 +326,22 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onStartLessonOnT
                       </div>
 
                       {ch.practicalProject && (
-                        <div className="text-xs text-sky-300/90 pt-1 flex items-center gap-1.5">
-                          <span className="font-semibold text-white/60">Hands-on:</span>
+                        <div className="text-xs text-amber-200/90 pt-1 flex items-center gap-1.5">
+                          <span className="font-semibold text-white/70">Hands-on:</span>
                           <span>{ch.practicalProject}</span>
                         </div>
                       )}
                     </div>
 
                     <div className="flex flex-col sm:flex-row md:flex-col items-end gap-3 shrink-0">
-                      <div className="text-right text-xs text-white/50 flex items-center gap-1">
+                      <div className="text-right text-xs text-white/50 flex items-center gap-1 font-mono">
                         <Clock className="w-3.5 h-3.5" />
                         <span>~{ch.estimatedHours} Hours</span>
                       </div>
 
-                      <button
+                      <LiquidGlassButton
+                        variant="primary"
+                        size="sm"
                         onClick={() =>
                           onStartLessonOnTopic(
                             ch.title,
@@ -351,11 +350,10 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onStartLessonOnT
                             language
                           )
                         }
-                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white text-zinc-950 hover:bg-white/90 text-xs font-semibold transition-all flex items-center justify-center gap-2 shadow"
+                        icon={<Play className="w-3.5 h-3.5 fill-current" />}
                       >
-                        <Play className="w-3.5 h-3.5 fill-current" />
-                        <span>Launch Video Lesson</span>
-                      </button>
+                        Launch Video Lesson
+                      </LiquidGlassButton>
                     </div>
                   </div>
                 ))}
@@ -364,10 +362,10 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onStartLessonOnT
 
             {/* Capstone Project Section */}
             {curriculum.capstoneProject && (
-              <div className="p-6 rounded-3xl bg-zinc-900/60 border border-white/10">
+              <div className="p-6 rounded-3xl liquid-glass-card border border-white/18 shadow-2xl">
                 <div className="flex items-center gap-2 text-amber-300 mb-2">
                   <CheckCircle2 className="w-4 h-4" />
-                  <span className="text-xs font-mono uppercase tracking-wider">Culminating Milestone</span>
+                  <span className="text-xs font-mono uppercase tracking-wider font-semibold">Culminating Milestone</span>
                 </div>
                 <h4 className="text-lg font-medium text-white mb-2">
                   {curriculum.capstoneProject.title}
@@ -377,7 +375,7 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onStartLessonOnT
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {curriculum.capstoneProject.deliverables?.map((d, didx) => (
-                    <span key={didx} className="text-xs px-3 py-1 rounded-xl bg-black/40 border border-white/10 text-white/80">
+                    <span key={didx} className="text-xs px-3 py-1.5 rounded-xl bg-black/40 border border-white/15 text-white/85 font-mono">
                       ✓ {d}
                     </span>
                   ))}

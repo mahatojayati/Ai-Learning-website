@@ -121,20 +121,20 @@ export const ClassroomVideoView: React.FC<ClassroomVideoViewProps> = ({
   return (
     <div
       id="classroom-video-viewport"
-      className="relative w-full h-full flex flex-col rounded-3xl overflow-hidden border border-white/20 shadow-2xl bg-gradient-to-b from-slate-950 via-zinc-950 to-slate-900 select-none transition-all"
+      className="relative w-full h-full flex flex-col rounded-3xl overflow-hidden liquid-glass-card border border-white/18 shadow-2xl bg-gradient-to-b from-slate-950 via-zinc-950 to-slate-900 select-none transition-all"
     >
       {/* 1. Camera Studio HUD & Live Broadcast Header */}
-      <div className="relative z-30 flex items-center justify-between px-3 sm:px-5 py-2.5 bg-gradient-to-b from-black/90 via-black/60 to-transparent pointer-events-auto border-b border-white/10">
+      <div className="relative z-30 flex items-center justify-between px-3 sm:px-6 py-3 bg-slate-950/80 backdrop-blur-2xl pointer-events-auto border-b border-white/15">
         <div className="flex items-center gap-2 sm:gap-3">
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 font-mono text-[10px] tracking-wider font-semibold">
+          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full liquid-glass-pill text-[11px] font-mono tracking-wider font-semibold text-white/90 border border-white/20 shadow-sm">
             <span className={`w-2 h-2 rounded-full bg-rose-500 ${isPlaying ? 'animate-ping' : ''}`} />
-            LIVE CLASSROOM VIDEO
+            <span className="text-emerald-300">LIVE CLASSROOM VIDEO</span>
           </span>
 
           <button
             type="button"
             onClick={() => setQuality((q) => (q === '1080p' ? '4K' : '1080p'))}
-            className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-white/10 hover:bg-white/20 text-[10px] font-mono text-white/80 transition-colors"
+            className="hidden sm:inline-block px-2.5 py-1 rounded-xl liquid-glass-pill text-[10px] font-mono text-white/80 hover:text-white transition-colors border border-white/15"
             title="Toggle video resolution"
           >
             {quality} 60FPS
@@ -145,64 +145,64 @@ export const ClassroomVideoView: React.FC<ClassroomVideoViewProps> = ({
             <button
               type="button"
               onClick={onSwitchTeacher}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-white/90 border border-white/20 text-[11px] font-medium transition-all"
+              className="flex items-center gap-2 px-3 py-1 rounded-xl liquid-glass-pill text-white/90 border border-white/20 text-xs font-medium transition-all hover:bg-white/15 shadow-sm"
               title="Click to choose a different instructor"
             >
               <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">Teacher:</span>
+              <span className="hidden sm:inline text-white/60">Teacher:</span>
               <span className="font-semibold text-white truncate max-w-[120px]">{teacher.name}</span>
               <span className="text-[10px] font-mono text-amber-300">({teacher.voiceGender === 'female' ? '♀' : '♂'})</span>
             </button>
           )}
 
           {voiceLabel && (
-            <span className="hidden lg:flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono">
-              <Volume2 className="w-3 h-3" />
+            <span className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-xl liquid-glass-pill text-emerald-300 text-[11px] font-mono border border-white/15">
+              <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
               {teacher.voiceGender === 'female' ? '♀ Female Voice Track' : '♂ Male Voice Track'}
             </span>
           )}
         </div>
 
         {/* Camera Angle Switcher & Controls */}
-        <div className="flex items-center gap-1.5">
-          <div className="flex items-center bg-black/50 backdrop-blur-md rounded-xl p-1 border border-white/15">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-black/50 backdrop-blur-xl rounded-2xl p-1 border border-white/18">
             <button
               type="button"
               onClick={() => setCameraAngle('wide')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all flex items-center gap-1 ${
+              className={`px-3 py-1 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 ${
                 cameraAngle === 'wide'
-                  ? 'bg-white/20 text-white shadow-sm'
+                  ? 'bg-white text-zinc-950 shadow-md font-semibold'
                   : 'text-white/60 hover:text-white'
               }`}
               title="Wide Classroom Angle (Teacher + Chalkboard)"
             >
-              <Layers className="w-3 h-3" />
+              <Layers className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Wide Stage</span>
             </button>
             <button
               type="button"
               onClick={() => setCameraAngle('board')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all flex items-center gap-1 ${
+              className={`px-3 py-1 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 ${
                 cameraAngle === 'board'
-                  ? 'bg-white/20 text-white shadow-sm'
+                  ? 'bg-white text-zinc-950 shadow-md font-semibold'
                   : 'text-white/60 hover:text-white'
               }`}
               title="Blackboard Close-up"
             >
-              <Radio className="w-3 h-3" />
+              <Radio className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Board Zoom</span>
             </button>
             <button
               type="button"
               onClick={() => setCameraAngle('instructor')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all flex items-center gap-1 ${
+              className={`px-3 py-1 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 ${
                 cameraAngle === 'instructor'
-                  ? 'bg-white/20 text-white shadow-sm'
+                  ? 'bg-white text-zinc-950 shadow-md font-semibold'
                   : 'text-white/60 hover:text-white'
               }`}
               title="Instructor Close-up"
             >
-              <Camera className="w-3 h-3" />
+              <Camera className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Instructor</span>
             </button>
           </div>
@@ -210,17 +210,17 @@ export const ClassroomVideoView: React.FC<ClassroomVideoViewProps> = ({
           <button
             type="button"
             onClick={onRaiseHand}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-medium transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl liquid-glass-pill bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/35 text-xs font-semibold transition-all shadow-sm"
             title="Raise Hand to Ask Question"
           >
-            <Hand className="w-3.5 h-3.5" />
+            <Hand className="w-3.5 h-3.5 text-amber-300" />
             <span className="hidden sm:inline">Raise Hand</span>
           </button>
 
           <button
             type="button"
             onClick={toggleFullscreen}
-            className="p-1.5 rounded-xl bg-black/40 hover:bg-white/10 text-white/70 hover:text-white border border-white/15 transition-all"
+            className="p-2 rounded-2xl liquid-glass-pill text-white/70 hover:text-white border border-white/18 transition-all"
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen Classroom'}
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -437,9 +437,10 @@ export const ClassroomVideoView: React.FC<ClassroomVideoViewProps> = ({
         </div>
 
         {/* Live Subtitles Ticker (if enabled) */}
+        {/* Live Subtitles Ticker (if enabled) */}
         {showSubtitles && (
           <div className="absolute bottom-16 left-4 right-4 z-25 pointer-events-none flex justify-center">
-            <div className="max-w-2xl bg-black/85 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 text-center text-xs sm:text-sm text-white/95 shadow-2xl leading-relaxed">
+            <div className="max-w-2xl liquid-glass-card px-5 py-2.5 rounded-2xl border border-white/20 text-center text-xs sm:text-sm text-white/95 shadow-2xl leading-relaxed backdrop-blur-2xl">
               <span className="text-amber-300 font-mono mr-1.5 font-bold">[{teacher.name}]:</span>
               <span>{currentModule.speechScript.slice(0, 180)}...</span>
             </div>
@@ -447,7 +448,7 @@ export const ClassroomVideoView: React.FC<ClassroomVideoViewProps> = ({
         )}
 
         {/* 3. Comprehensive Video Lecture Player Control Bar */}
-        <div className="absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black via-black/90 to-black/40 border-t border-white/15 px-3 sm:px-6 py-2.5 flex flex-col gap-1.5">
+        <div className="absolute bottom-0 left-0 right-0 z-30 liquid-glass-card bg-slate-950/85 backdrop-blur-2xl border-t border-white/18 px-3 sm:px-6 py-2.5 flex flex-col gap-1.5">
           {/* Video Timeline Scrubber Bar */}
           <div className="w-full flex items-center gap-3">
             <span className="text-[10px] font-mono text-white/60 min-w-[34px]">
@@ -464,7 +465,7 @@ export const ClassroomVideoView: React.FC<ClassroomVideoViewProps> = ({
               />
               {/* Active Progress Bar */}
               <div
-                className="absolute top-0 left-0 bottom-0 bg-gradient-to-r from-emerald-400 to-teal-300 rounded-full"
+                className="absolute top-0 left-0 bottom-0 bg-gradient-to-r from-emerald-400 via-teal-300 to-white rounded-full shadow-[0_0_8px_rgba(52,211,153,0.5)]"
                 style={{ width: `${progressRatio * 100}%` }}
               />
             </div>
@@ -480,10 +481,10 @@ export const ClassroomVideoView: React.FC<ClassroomVideoViewProps> = ({
               <button
                 type="button"
                 onClick={onTogglePlay}
-                className="p-2 rounded-xl bg-white/15 hover:bg-white/25 text-white transition-all transform active:scale-95"
+                className="p-2 rounded-xl bg-white text-zinc-950 hover:bg-white/90 transition-all transform active:scale-95 shadow-md font-semibold"
                 title={isPlaying ? 'Pause Video' : 'Play Video'}
               >
-                {isPlaying ? <Pause className="w-4 h-4 fill-white" /> : <Play className="w-4 h-4 fill-white ml-0.5" />}
+                {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
               </button>
 
               {/* Prev Module */}
@@ -491,7 +492,7 @@ export const ClassroomVideoView: React.FC<ClassroomVideoViewProps> = ({
                 type="button"
                 onClick={onPrevModule}
                 disabled={currentModuleIndex === 0}
-                className="p-1.5 rounded-lg text-white/60 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="p-1.5 rounded-xl liquid-glass-pill text-white/70 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors border border-white/15"
                 title="Previous Module"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -501,7 +502,7 @@ export const ClassroomVideoView: React.FC<ClassroomVideoViewProps> = ({
               <button
                 type="button"
                 onClick={onNextModule}
-                className="p-1.5 rounded-lg text-white/60 hover:text-white transition-colors"
+                className="p-1.5 rounded-xl liquid-glass-pill text-white/70 hover:text-white transition-colors border border-white/15"
                 title="Next Module"
               >
                 <RotateCw className="w-4 h-4" />
@@ -511,7 +512,7 @@ export const ClassroomVideoView: React.FC<ClassroomVideoViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsMuted((m) => !m)}
-                className="p-1.5 rounded-lg text-white/70 hover:text-white transition-colors"
+                className="p-1.5 rounded-xl liquid-glass-pill text-white/70 hover:text-white transition-colors border border-white/15"
                 title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
               >
                 {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4" />}
@@ -524,25 +525,27 @@ export const ClassroomVideoView: React.FC<ClassroomVideoViewProps> = ({
               <button
                 type="button"
                 onClick={() => setShowSubtitles((s) => !s)}
-                className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 ${
-                  showSubtitles ? 'text-emerald-400 bg-emerald-500/15' : 'text-white/50 hover:text-white'
+                className={`px-2.5 py-1 rounded-xl transition-all flex items-center gap-1 border ${
+                  showSubtitles
+                    ? 'text-emerald-300 bg-emerald-500/20 border-emerald-400/40 shadow-sm'
+                    : 'liquid-glass-pill text-white/60 hover:text-white border-white/15'
                 }`}
                 title="Toggle Subtitles / CC"
               >
-                <Subtitles className="w-4 h-4" />
-                <span className="hidden md:inline text-[10px] font-mono">CC</span>
+                <Subtitles className="w-3.5 h-3.5" />
+                <span className="hidden md:inline text-[10px] font-mono font-bold">CC</span>
               </button>
 
               {/* Playback Speed */}
               {onChangePlaybackRate && (
-                <div className="flex items-center bg-white/10 rounded-lg px-1.5 py-0.5">
+                <div className="flex items-center bg-black/40 border border-white/15 rounded-xl p-0.5">
                   {[1.0, 1.25, 1.5].map((rate) => (
                     <button
                       key={rate}
                       type="button"
                       onClick={() => onChangePlaybackRate(rate)}
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors ${
-                        playbackRate === rate ? 'bg-white/30 text-white font-bold' : 'text-white/60 hover:text-white'
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-mono transition-all ${
+                        playbackRate === rate ? 'bg-white text-zinc-950 font-bold shadow-sm' : 'text-white/60 hover:text-white'
                       }`}
                     >
                       {rate}x
@@ -555,7 +558,7 @@ export const ClassroomVideoView: React.FC<ClassroomVideoViewProps> = ({
               <button
                 type="button"
                 onClick={toggleFullscreen}
-                className="p-1.5 rounded-lg text-white/70 hover:text-white transition-colors"
+                className="p-1.5 rounded-xl liquid-glass-pill text-white/70 hover:text-white border border-white/15 transition-colors"
                 title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
               >
                 {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
