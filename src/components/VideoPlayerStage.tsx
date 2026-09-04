@@ -71,9 +71,10 @@ export const VideoPlayerStage: React.FC<VideoPlayerStageProps> = ({
   const modules = lesson.curriculumModules || [];
   const currentModule = modules[currentModuleIndex] || modules[0];
 
-  // Web Speech Synthesis ref
+  // Web Speech Synthesis & Server Audio ref
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
   // Initialize Speech Synthesis and populate gender-appropriate voices
@@ -108,6 +109,10 @@ export const VideoPlayerStage: React.FC<VideoPlayerStageProps> = ({
   }, [activeTeacher.voiceGender, language, activeTeacher.voicePitch, activeTeacher.voiceRate]);
 
   const stopSpeech = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
     if (synthRef.current) {
       synthRef.current.cancel();
     }
@@ -117,17 +122,53 @@ export const VideoPlayerStage: React.FC<VideoPlayerStageProps> = ({
     setAudioLevel(0);
   };
 
-  const speakText = (text: string, onEnd?: () => void) => {
-    if (!synthRef.current || isMuted) {
+  const speakText = (text: string, onEnd?: () => void, overrideAudioUrl?: string) => {
+    stopSpeech();
+
+    if (isMuted) {
       simulateSpeaking(onEnd);
       return;
     }
 
-    stopSpeech();
+    const urlToPlay = overrideAudioUrl || (text === currentModule?.speechScript ? currentModule?.audioUrl : undefined);
 
-    const sanitized = cleanSpeechScript(text);
-    const utterance = new SpeechSynthesisUtterance(sanitized);
-    utteranceRef.current = utterance;
+    if (urlToPlay) {
+      const audio = new Audio(urlToPlay);
+      audio.playbackRate = playbackSpeed;
+      audioRef.current = audio;
+      
+      audio.onplay = () => {
+        setIsPlaying(true);
+        startAudioVisualizerLoop();
+      };
+      
+      audio.onended = () => {
+        setIsPlaying(false);
+        setAudioLevel(0);
+        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+        if (onEnd) onEnd();
+      };
+      
+      audio.onerror = () => {
+        console.warn('Failed to load server audio, falling back to local TTS');
+        fallbackToLocalTTS();
+      };
+      
+      audio.play().catch(() => fallbackToLocalTTS());
+      return;
+    }
+
+    fallbackToLocalTTS();
+
+    function fallbackToLocalTTS() {
+      if (!synthRef.current) {
+        simulateSpeaking(onEnd);
+        return;
+      }
+
+      const sanitized = cleanSpeechScript(text);
+      const utterance = new SpeechSynthesisUtterance(sanitized);
+      utteranceRef.current = utterance;
 
     // Guaranteed gender-accurate voice selection
     const voiceResult = selectVoiceForTeacher(
@@ -184,6 +225,7 @@ export const VideoPlayerStage: React.FC<VideoPlayerStageProps> = ({
     };
 
     synthRef.current.speak(utterance);
+    }
   };
 
   // Switch teacher in real time during the lesson

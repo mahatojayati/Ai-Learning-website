@@ -93,20 +93,80 @@ export const Hero: React.FC<HeroProps> = ({ onStartLessonGlobal }) => {
         }),
       });
 
-      const data = await res.json();
-      if (data.lesson) {
+      if (!res.body) {
+        throw new Error('No response body from server');
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      let streamedLesson: LessonPlan = {
+        title: config.topic,
+        summary: 'Generating lesson...',
+        subjectCategory: 'general',
+        estimatedTimeMinutes: config.durationMinutes,
+        curriculumModules: [],
+        learningObjectives: [],
+        finalAssessment: [],
+        recommendedNextTopics: []
+      };
+
+      // Ensure the stage mounts immediately to show loading / streaming state
+      setActiveLesson(streamedLesson);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        
+        const chunks = buffer.split('\n\n');
+        buffer = chunks.pop() || '';
+        
+        for (const chunk of chunks) {
+          if (chunk.startsWith('data: ')) {
+            const dataStr = chunk.slice(6);
+            try {
+              const event = JSON.parse(dataStr);
+              if (event.type === 'module') {
+                streamedLesson = {
+                  ...streamedLesson,
+                  curriculumModules: [...streamedLesson.curriculumModules, event.data]
+                };
+                setActiveLesson(streamedLesson);
+              } else if (event.type === 'metadata') {
+                streamedLesson = {
+                  ...streamedLesson,
+                  ...event.data,
+                  curriculumModules: streamedLesson.curriculumModules // keep existing modules
+                };
+                setActiveLesson(streamedLesson);
+              } else if (event.type === 'fallback') {
+                streamedLesson = event.data;
+                setActiveLesson(streamedLesson);
+              } else if (event.type === 'error') {
+                console.error(event.message);
+              }
+            } catch (e) {
+              console.warn('Failed to parse SSE chunk', e);
+            }
+          }
+        }
+      }
+
+      if (streamedLesson.curriculumModules.length > 0) {
         // Save to study library automatically
         try {
           const rec: SavedLessonRecord = {
             id: `less_${Date.now()}`,
             topic: config.topic,
-            title: data.lesson.title || config.topic,
+            title: streamedLesson.title || config.topic,
             teacherName: config.teacher.name,
             teacherAvatarUrl: config.teacher.imageUrl,
             language: config.language,
             level: config.level,
             date: new Date().toLocaleDateString(),
-            lesson: data.lesson,
+            lesson: streamedLesson,
             completed: false,
           };
           const existing = JSON.parse(
@@ -122,14 +182,14 @@ export const Hero: React.FC<HeroProps> = ({ onStartLessonGlobal }) => {
 
         if (onStartLessonGlobal) {
           onStartLessonGlobal(
-            data.lesson,
+            streamedLesson,
             config.teacher,
             config.language,
             config.level,
             config.format
           );
         } else {
-          setActiveLesson(data.lesson);
+          setActiveLesson(streamedLesson);
         }
         setIsSetupOpen(false);
       }
