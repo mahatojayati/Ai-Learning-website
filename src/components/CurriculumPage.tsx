@@ -66,12 +66,37 @@ export const CurriculumPage: React.FC<CurriculumPageProps> = ({ onStartLessonOnT
       });
 
       const data = await res.json();
+      
       if (data.curriculum) {
         setCurriculum(data.curriculum);
+        setIsGenerating(false);
+      } else if (data.jobId) {
+        // Poll for job status
+        const pollInterval = setInterval(async () => {
+          try {
+            const statusRes = await fetch(`/api/curriculum-job/${data.jobId}`);
+            const statusData = await statusRes.json();
+            
+            if (statusData.status === 'completed' && statusData.curriculum) {
+              clearInterval(pollInterval);
+              setCurriculum(statusData.curriculum);
+              setIsGenerating(false);
+            } else if (statusData.status === 'failed') {
+              clearInterval(pollInterval);
+              console.error('Job failed:', statusData.error);
+              setIsGenerating(false);
+            }
+          } catch (pollErr) {
+            console.error('Error polling status:', pollErr);
+            clearInterval(pollInterval);
+            setIsGenerating(false);
+          }
+        }, 2000); // Poll every 2 seconds
+      } else {
+        setIsGenerating(false);
       }
     } catch (err) {
       console.error('Failed to generate curriculum:', err);
-    } finally {
       setIsGenerating(false);
     }
   };
