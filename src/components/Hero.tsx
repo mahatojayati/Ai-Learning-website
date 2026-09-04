@@ -6,6 +6,7 @@ import { VideoPlayerStage } from './VideoPlayerStage';
 import { AssessmentReportModal } from './AssessmentReportModal';
 import { LiquidGlassButton } from './LiquidGlassButton';
 import { useAuth } from '../context/AuthContext';
+import { streamLesson, saveLesson } from '../services/api';
 import {
   DurationOption,
   LearnerLevel,
@@ -71,133 +72,67 @@ export const Hero: React.FC<HeroProps> = ({ onStartLessonGlobal }) => {
       setActiveIndex(matchedIdx);
     }
 
-    try {
-      const res = await fetch('/api/generate-lesson', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          topic: config.topic,
-          materialText: config.materialText,
-          level: config.level,
-          durationMinutes: config.durationMinutes,
-          language: config.language,
-          style: config.style,
-          teacherName: config.teacher.name,
-          studentProfile: user
-            ? {
-                name: user.name,
-                level: user.level,
-                style: config.style,
-              }
-            : undefined,
-        }),
-      });
-
-      if (!res.body) {
-        throw new Error('No response body from server');
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      let streamedLesson: LessonPlan = {
-        title: config.topic,
-        summary: 'Generating lesson...',
-        subjectCategory: 'general',
-        estimatedTimeMinutes: config.durationMinutes,
-        curriculumModules: [],
-        learningObjectives: [],
-        finalAssessment: [],
-        recommendedNextTopics: []
-      };
-
-      // Ensure the stage mounts immediately to show loading / streaming state
-      setActiveLesson(streamedLesson);
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        
-        const chunks = buffer.split('\n\n');
-        buffer = chunks.pop() || '';
-        
-        for (const chunk of chunks) {
-          if (chunk.startsWith('data: ')) {
-            const dataStr = chunk.slice(6);
-            try {
-              const event = JSON.parse(dataStr);
-              if (event.type === 'module') {
-                streamedLesson = {
-                  ...streamedLesson,
-                  curriculumModules: [...streamedLesson.curriculumModules, event.data]
-                };
-                setActiveLesson(streamedLesson);
-              } else if (event.type === 'metadata') {
-                streamedLesson = {
-                  ...streamedLesson,
-                  ...event.data,
-                  curriculumModules: streamedLesson.curriculumModules // keep existing modules
-                };
-                setActiveLesson(streamedLesson);
-              } else if (event.type === 'fallback') {
-                streamedLesson = event.data;
-                setActiveLesson(streamedLesson);
-              } else if (event.type === 'error') {
-                console.error(event.message);
-              }
-            } catch (e) {
-              console.warn('Failed to parse SSE chunk', e);
-            }
+    const payload = {
+      topic: config.topic,
+      materialText: config.materialText,
+      level: config.level,
+      durationMinutes: config.durationMinutes,
+      language: config.language,
+      style: config.style,
+      teacherName: config.teacher.name,
+      studentProfile: user
+        ? {
+            name: user.name,
+            level: user.level,
+            style: config.style,
           }
-        }
-      }
+        : undefined,
+    };
 
-      if (streamedLesson.curriculumModules.length > 0) {
-        // Save to study library automatically
-        try {
-          const rec: SavedLessonRecord = {
-            id: `less_${Date.now()}`,
-            topic: config.topic,
-            title: streamedLesson.title || config.topic,
-            teacherName: config.teacher.name,
-            teacherAvatarUrl: config.teacher.imageUrl,
-            language: config.language,
-            level: config.level,
-            date: new Date().toLocaleDateString(),
-            lesson: streamedLesson,
-            completed: false,
-          };
-          const existing = JSON.parse(
-            localStorage.getItem('kollektiva_saved_lessons_v1') || '[]'
-          );
-          localStorage.setItem(
-            'kollektiva_saved_lessons_v1',
-            JSON.stringify([rec, ...existing])
-          );
-        } catch (e) {
-          console.warn('Could not save lesson to library', e);
-        }
+    await streamLesson(
+      payload,
+      (updatedLesson) => {
+        setActiveLesson({ ...updatedLesson });
+      },
+      async (completedLesson) => {
+        if (completedLesson.curriculumModules.length > 0) {
+          if (user) {
+            await saveLesson(
+              {
+                topic: config.topic,
+                title: completedLesson.title || config.topic,
+                teacherName: config.teacher.name,
+                teacherAvatarUrl: config.teacher.imageUrl,
+                language: config.language,
+                level: config.level,
+                date: new Date().toLocaleDateString(),
+                lesson: completedLesson,
+                completed: false,
+              },
+              user.id
+            );
+          }
 
-        if (onStartLessonGlobal) {
-          onStartLessonGlobal(
-            streamedLesson,
-            config.teacher,
-            config.language,
-            config.level,
-            config.format
-          );
-        } else {
-          setActiveLesson(streamedLesson);
+          if (onStartLessonGlobal) {
+            onStartLessonGlobal(
+              completedLesson,
+              config.teacher,
+              config.language,
+              config.level,
+              config.format
+            );
+          } else {
+            setActiveLesson(completedLesson);
+          }
+          setIsSetupOpen(false);
         }
-        setIsSetupOpen(false);
+        setIsGenerating(false);
+      },
+      (error) => {
+        console.error('Lesson stream error:', error);
+        setIsGenerating(false);
       }
-    } catch (err) {
-      console.error('Failed to generate lesson:', err);
-    } finally {
-      setIsGenerating(false);
-    }
+    );
   };
 
   // Quick Start with auth check

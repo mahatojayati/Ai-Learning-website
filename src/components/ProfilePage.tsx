@@ -5,6 +5,7 @@ import { User, Globe, Award, BookOpen, Check, ShieldCheck, Sparkles, Volume2, Ar
 import { LearnerLevel, TeacherAvatar } from '../types';
 import { testSpeakVoice, selectVoiceForTeacher } from '../utils/speechVoiceHelper';
 import { LiquidGlassButton } from './LiquidGlassButton';
+import { updateProfile } from '../services/api';
 
 interface ProfilePageProps {
   onBack?: () => void;
@@ -24,8 +25,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
   const selectedTeacher =
     TEACHERS.find((t) => t.id === selectedTeacherId) || TEACHERS[0];
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (user && !user.isGuest) {
+      await updateProfile(user.id, {
+        name,
+        level,
+        preferredLanguage: language,
+        preferredTeacherId: selectedTeacherId,
+      });
+    }
     updateUserProfile({
       name,
       level,

@@ -1,4 +1,7 @@
 import express from 'express';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
@@ -531,6 +534,127 @@ Return ONLY valid JSON.`;
 
 // Dynamic curriculum fallback generator supporting multilingual requests
 // Fallback curriculum logic moved to ai.ts
+
+// --- Postgres Database Endpoints ---
+
+app.get('/api/lessons', async (req, res) => {
+  try {
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ success: false, error: 'userId required' });
+    const dbLessons = await prisma.lesson.findMany({
+      where: { userId: String(userId) },
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    // Map db structure to frontend SavedLessonRecord format
+    const lessons = dbLessons.map(dbLesson => {
+      const parsedModules: any = dbLesson.modules || {};
+      return {
+        id: dbLesson.id,
+        topic: dbLesson.topic,
+        title: dbLesson.title,
+        teacherName: parsedModules.teacherName || dbLesson.teacherId,
+        teacherAvatarUrl: parsedModules.teacherAvatarUrl || '',
+        language: dbLesson.language,
+        level: parsedModules.level || 'intermediate',
+        date: dbLesson.createdAt.toLocaleDateString(),
+        completed: parsedModules.completed || false,
+        score: parsedModules.score,
+        lesson: parsedModules.lesson || parsedModules
+      };
+    });
+    
+    res.json({ success: true, lessons });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/lessons', async (req, res) => {
+  try {
+    const { userId, title, topic, subjectCategory, teacherName, language, estimatedMinutes, ...rest } = req.body;
+    if (!userId) return res.status(400).json({ success: false, error: 'userId required' });
+    
+    // Make sure user exists
+    let user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          id: userId,
+          email: `${userId}@example.com`,
+          fullName: 'Student',
+          preferredLanguage: language || 'English'
+        }
+      });
+    }
+
+    const savedLesson = await prisma.lesson.create({
+      data: {
+        userId,
+        title: title || rest.lesson?.title || topic || 'Lesson',
+        topic: topic || 'Topic',
+        subjectCategory: subjectCategory || rest.lesson?.subjectCategory || 'general',
+        teacherId: teacherName || 'Elena Baranova',
+        language: language || 'English',
+        estimatedMinutes: estimatedMinutes || rest.lesson?.estimatedTimeMinutes || 20,
+        modules: rest // Store all extra fields like lesson plan, teacherAvatarUrl, level in the JSON blob
+      }
+    });
+    res.json({ success: true, lesson: savedLesson });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/profile', async (req, res) => {
+  try {
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ success: false, error: 'userId required' });
+    const profile = await prisma.user.findUnique({ where: { id: String(userId) } });
+    if (profile) {
+      res.json({ success: true, profile });
+    } else {
+      res.status(404).json({ success: false, error: 'Profile not found' });
+    }
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.put('/api/profile', async (req, res) => {
+  try {
+    const { userId, ...updates } = req.body;
+    if (!userId) return res.status(400).json({ success: false, error: 'userId required' });
+    
+    let user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+       user = await prisma.user.create({
+         data: {
+           id: userId,
+           email: `${userId}@example.com`,
+           fullName: updates.fullName || updates.name || 'Student',
+           ...updates
+         }
+       });
+       return res.json({ success: true, profile: user });
+    }
+
+    const updatedProfile = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        fullName: updates.fullName || updates.name,
+        masteryLevel: updates.masteryLevel || updates.level,
+        preferredLanguage: updates.preferredLanguage,
+        preferredTeacherId: updates.preferredTeacherId
+      }
+    });
+    res.json({ success: true, profile: updatedProfile });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// --- Fallback Generators ---
 
 // Dynamic practice question fallback generator
 function generateFallbackPractice(
