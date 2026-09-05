@@ -272,28 +272,6 @@ export const Hero: React.FC<HeroProps> = ({ onStartLessonGlobal }) => {
 
           {/* Meta footer */}
           <div className="border-t border-white/20 pt-5 flex flex-wrap items-center justify-between gap-4 text-sm font-medium">
-            {/* 1. Name (always visible, remounts with key + animate-[fadeIn_0.5s_ease]) */}
-            <span
-              key={activeTeacher.name}
-              className="text-white animate-[fadeIn_0.5s_ease]"
-            >
-              {activeTeacher.name}
-            </span>
-
-            {/* 2. Role (hidden on mobile, visible sm:+) */}
-            <span
-              key={activeTeacher.role}
-              className="hidden sm:inline text-white/70"
-            >
-              {activeTeacher.role}
-            </span>
-
-            {/* 3. Static tenure (hidden until md) */}
-            <span className="hidden md:inline text-white/70">
-              In the business since 2020
-            </span>
-
-            {/* 4. WhatsApp link */}
             <a
               href="https://wa.me/917347654757"
               target="_blank"
