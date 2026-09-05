@@ -72,7 +72,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenLesson, onStartN
   };
 
   return (
-    <div className="min-h-screen kollektiva-page-bg text-white font-geist pt-24 pb-32 px-4 sm:px-6 lg:px-8 overflow-y-auto selection:bg-emerald-500 selection:text-black">
+    <div className="min-h-screen echomind-page-bg text-white font-geist pt-24 pb-32 px-4 sm:px-6 lg:px-8 overflow-y-auto selection:bg-emerald-500 selection:text-black">
       <div className="max-w-5xl mx-auto space-y-8">
         {/* Back Navigation Action */}
         {onBack && (

@@ -16,7 +16,7 @@ interface AuthContextType {
   clearPendingRedirect: () => void;
 }
 
-const STORAGE_KEY = 'kollektiva_user_session_v1';
+const STORAGE_KEY = 'echomind_user_session_v1';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -98,7 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const session: UserSession = {
       id: `guest_${Date.now()}`,
       name: 'Guest Scholar',
-      email: 'scholar@kollektiva.ai',
+      email: 'scholar@echomind.ai',
       level: 'intermediate',
       primarySubject: 'Physics & Applied Mathematics',
       preferredLanguage: 'English',

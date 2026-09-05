@@ -209,7 +209,7 @@ export const Hero: React.FC<HeroProps> = ({ onStartLessonGlobal }) => {
           {/* Left — H1 (static, never changes) */}
           <div className="max-w-xl space-y-4">
             <h1 className="text-3xl font-normal leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-7xl">
-              Kollektiva is the talent you build with each&nbsp;day
+              EchoMind is the talent you build with each&nbsp;day
             </h1>
 
             {/* AI Teacher Badge & Trigger */}

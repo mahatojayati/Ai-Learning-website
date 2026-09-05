@@ -121,7 +121,7 @@ app.post('/api/generate-lesson', async (req, res) => {
         ? `Student Name: ${studentProfile.name || 'Learner'}, Current Mastery Level: ${studentProfile.level || level}, Weak Concepts to Address: ${(studentProfile.weakConcepts || []).join(', ') || 'None specified'}, Preferred Style: ${studentProfile.style || style}`
         : `Learner Level: ${level}, Preferred Style: ${style}`;
 
-      const prompt = `You are ${teacherName}, an elite personalized AI Educator at Kollektiva teaching an interactive video-based class.
+      const prompt = `You are ${teacherName}, an elite personalized AI Educator at EchoMind teaching an interactive video-based class.
 Personalized Learner Profile:
 ${studentContext}
 - Target Topic: ${topic || 'Understanding Core Concepts'}
@@ -287,7 +287,7 @@ app.post('/api/evaluate-answer', async (req, res) => {
     const ai = getGemini();
 
     if (ai) {
-      const prompt = `You are ${teacherName}, an empathetic and insightful AI educator at Kollektiva.
+      const prompt = `You are ${teacherName}, an empathetic and insightful AI educator at EchoMind.
 A student was asked: "${question}"
 Regarding concept: "${concept}"
 The student answered: "${studentAnswer}"
@@ -876,7 +876,7 @@ function generateFallbackLesson(topic: string = 'Ohm\'s Law & Electrical Circuit
           type: 'explain',
           speechScript: isHindi
             ? 'Swagat hai dosto! Aaj hum physics ka ek sabse basic aur powerful law samjhenge: Ohm ka niyam. Voltage ek dhakka hai, jo electrons ko wire ke andar aage badhata hai.'
-            : 'Welcome to Kollektiva Physics! Today we will break down Ohm\'s Law. Think of Voltage as electrical pressure—the force pushing electrons through a conductive pathway.',
+            : 'Welcome to EchoMind Physics! Today we will break down Ohm\'s Law. Think of Voltage as electrical pressure—the force pushing electrons through a conductive pathway.',
           keyTakeaway: 'Voltage (V) = The electric potential difference driving charges.',
           visualType: 'equation',
           visualContent: {
@@ -1252,7 +1252,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Kollektiva AI Teacher server running on http://0.0.0.0:${PORT}`);
+    console.log(`EchoMind server running on http://0.0.0.0:${PORT}`);
   });
 }
 

@@ -325,7 +325,7 @@ export const VideoPlayerStage: React.FC<VideoPlayerStageProps> = ({
   const progressPercent = modules.length > 0 ? ((currentModuleIndex + 1) / modules.length) * 100 : 0;
 
   return (
-    <div className="relative w-full min-h-[calc(100vh-4rem)] flex flex-col justify-between kollektiva-page-bg font-geist text-white select-none pb-8 overflow-y-auto">
+    <div className="relative w-full min-h-[calc(100vh-4rem)] flex flex-col justify-between echomind-page-bg font-geist text-white select-none pb-8 overflow-y-auto">
       {/* Top Video Stage Bar */}
       <header className="relative z-20 flex items-center justify-between px-3 sm:px-8 py-2.5 bg-gradient-to-b from-black/85 via-black/50 to-transparent border-b border-white/10 backdrop-blur-md">
         <div className="flex items-center gap-2 sm:gap-3">

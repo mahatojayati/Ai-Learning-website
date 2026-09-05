@@ -238,7 +238,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen kollektiva-page-bg text-white selection:bg-emerald-500 selection:text-black">
+    <div className="min-h-screen echomind-page-bg text-white selection:bg-emerald-500 selection:text-black">
       {/* Top Universal Navbar */}
       <Navbar
         currentRoute={currentRoute}
